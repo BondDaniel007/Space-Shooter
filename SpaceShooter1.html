@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>SAPCE PIRATES</title>
+	<style type='text/css'>
+		canvas { border: 1px solid black; }
+	</style>
+</head>
+<body>
+	<canvas id='canvas' width='800' height='600'></canvas>
+	<script type='text/javascript'>
+	"use strict";
+	var ctx;
+	var BGI;
+	
+	var pattern;
+	var MENU = 0, PLAY = 1, GAMEOVER = 2;
+	var state = MENU;
+	var timerID = -1;
+	var mouse = { x: 0, y: 0, clicked: false };
+	var playButton = {};
+	var waitTime = 0;
+	var lastTime = 0;
+	var lives = 5;
+	var left = false, right = false, up = false, down = false;	
+	
+	var player = { x: 400, y: 500, w: 25, h: 48, dx: 5, dy: 5, health: 100 };
+	
+	player.img = new Image();
+	player.ready = false;
+	player.img.onload = function() {
+		player.ready = true;
+	}
+	player.img.src = "afg-041110-053.png";
+	
+	var BGI = new Image();
+	BGI.onload = function() {
+		pattern = ctx.createPattern(BGI, 'repeat');
+	}
+	BGI.src = 'Space.png';
+		
+	function contains( r, m ) {
+		return ! (r.x>m.x || r.y>m.y || m.x>r.x+r.w || m.y>r.y+r.h );
+	}
+
+	function getClick(e) {
+		var evt = e || window.event;
+		mouse.x = evt.pageX - ctx.canvas.offsetLeft;
+		mouse.y = evt.pageY - ctx.canvas.offsetTop;
+		mouse.clicked = true;
+	}
+	
+	function init()
+	{
+		ctx.font = "24pt Arial, sans-serif";
+		ctx.textBaseline = "top";
+		playButton.x = ctx.canvas.width/2 - 100;
+		playButton.y = ctx.canvas.height/2 - 50;
+		playButton.w = 200;
+		playButton.h = 100;
+	}
+	
+	function reset()
+	{
+		lives = 5;
+		waitTime = 0;
+		mouse.clicked = false;
+	}
+	
+	function changeState( newState ) {
+		if ( timerID != -1 )
+			clearInterval(timerID);
+		if ( newState === MENU )
+			timerID = setInterval(function() { updateMenu(); drawMenu(ctx); }, 1000/60);
+		else if ( newState === PLAY ) {
+			reset();
+			timerID = setInterval(function() { updatePlay(); drawPlay(ctx); }, 1000/60);
+		}
+		else if ( newState === GAMEOVER ) {
+			waitTime = 2000;
+			lastTime = performance.now();
+			timerID = setInterval(function() { updateGameOver(); drawGameOver(ctx); }, 1000/60);
+		}
+		state = newState;
+	}
+	
+	var KEY_UPw = 87, KEY_DOWNs = 83, KEY_LEFTa = 65, KEY_RIGHTd = 68;
+	
+	function handleKeyDown(evt) {
+		if ( evt.keyCode == KEY_UPw ) {
+			up = true;
+		}
+		if ( evt.keyCode == KEY_DOWNs ) {
+			down = true;
+		}
+		if ( evt.keyCode == KEY_LEFTa ) {
+			left = true;
+		}
+		if ( evt.keyCode == KEY_RIGHTd ) {
+			right = true;
+		}
+		/*if ( evt.keyCode == KEY_SWORD )
+			swordOut = true;
+		*/
+		if ( 37 <= evt.keyCode && evt.keyCode <= 40 )
+			evt.preventDefault();
+		}
+		
+	function handleKeyUp(evt) {
+		if ( evt.keyCode == KEY_UPw )
+			up = false;
+		if ( evt.keyCode == KEY_DOWNs )
+			down = false;
+		if ( evt.keyCode == KEY_LEFTa )
+			left = false;
+		if ( evt.keyCode == KEY_RIGHTd )
+			right = false;
+		
+		if ( 37 <= evt.keyCode && evt.keyCode <= 40 )
+			evt.preventDefault();
+	}
+	/********************************
+	 *  M E N U  ********************
+	 *******************************/
+
+	function updateMenu() {
+		if ( mouse.clicked && contains(playButton, mouse) === true ) {
+			changeState(PLAY);
+		}
+		mouse.clicked = false;
+	}
+
+	function drawMenu(ctx) {
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		ctx.strokeRect(playButton.x, playButton.y, playButton.w, playButton.h);
+		ctx.fillText("[PLAY]", playButton.x+55, playButton.y+30);
+	}
+	
+	function updatePlay() {
+		var orig = { x: player.x, y: player.y };
+			
+		// move the player
+		if ( up == true )
+			player.y -= player.dy;
+		if ( down == true )
+			player.y += player.dy;					
+		if ( left == true )
+			player.x -= player.dx;
+		if ( right == true )
+			player.x += player.dx;
+			
+		//check if the player ran into a box and, if so, move back
+		//if ( collide(player, box1) || collide(player, box2) || collide(player, box3) || collide(player, box4))  {
+		//player.x = orig.x;
+		//player.y = orig.y; 
+		
+		if ( player.x < 0 )
+			player.x = 0;
+		else if ( player.x + player.w > ctx.canvas.width )
+			player.x = ctx.canvas.width - player.w;
+		if ( player.y < 0)
+			player.y = 0;
+		else if ( player.y + player.h > ctx.canvas.height )
+			player.y = ctx.canvas.height - player.h;
+	}
+	function collide( player, box ) {
+		if( player.x >= box.x + box.w )
+			return false;
+		if ( player.y >= box.y + box.h )
+			return false;
+		if ( box.x >= player.x + player.w )
+			return false;
+		if ( box.y >= player.y + player.h )
+			return false;
+		
+		return true;
+	}
+	
+	function drawPlay(ctx) {
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		
+		ctx.rect(0, 0, 800, 600);
+		ctx.fillStyle = pattern;
+		ctx.fill();
+		
+		if ( player.ready )
+			ctx.drawImage(player.img, player.x, player.y );
+	}
+	
+	function updateGameOver() {
+		var curTime = performance.now();
+		var elapsed = curTime - lastTime;
+		waitTime -= elapsed;
+		lastTime = curTime;
+		if ( waitTime <= 0 )
+			changeState(MENU);
+	}
+			
+	function drawGameOver(ctx) {
+		ctx.fillText("GAME OVER!", 200, 100);
+	}
+
+	function main() {
+		ctx = document.getElementById('canvas').getContext("2d");
+		document.addEventListener('keydown', handleKeyDown);
+		document.addEventListener('keyup', handleKeyUp);
+		document.addEventListener('click', getClick);
+		document.addEventListener('drag', getClick);
+		
+		init();
+		changeState(MENU);
+	}
+	
+	main();
+	</script>
+</body>
+</html>
