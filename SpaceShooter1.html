@@ -8,13 +8,23 @@
 	</style>
 </head>
 <body>
-	<canvas id='canvas' width='800' height='600'></canvas>
+	<canvas id='canvas' width='960' height='512'></canvas>
 	<script type='text/javascript'>
 	"use strict";
 	var ctx;
-	var BGI;
 	
-	var pattern;
+	var BGI = {};
+	
+	var firing = false;
+	var bullets = [];
+	var bspeed = 6;
+	var curStamp = 0;
+	var lastStamp = 0;
+	var elapsed = 0;
+	var fireTime = 0;
+	
+	var pirates = [];
+	
 	var MENU = 0, PLAY = 1, GAMEOVER = 2;
 	var state = MENU;
 	var timerID = -1;
@@ -25,7 +35,7 @@
 	var lives = 5;
 	var left = false, right = false, up = false, down = false;	
 	
-	var player = { x: 400, y: 500, w: 25, h: 48, dx: 5, dy: 5, health: 100 };
+	var player = { x: 400, y: 500, w: 25, h: 48, dx: 2, dy: 2, health: 100 };
 	
 	player.img = new Image();
 	player.ready = false;
@@ -34,12 +44,13 @@
 	}
 	player.img.src = "afg-041110-053.png";
 	
-	var BGI = new Image();
-	BGI.onload = function() {
-		pattern = ctx.createPattern(BGI, 'repeat');
+	BGI.img = new Image();
+	BGI.ready = false;
+	BGI.img.onload = function() {
+		BGI.ready = true;
 	}
-	BGI.src = 'Space.png';
-		
+	BGI.img.src = 'Stars_wallpapers_263.png';
+	
 	function contains( r, m ) {
 		return ! (r.x>m.x || r.y>m.y || m.x>r.x+r.w || m.y>r.y+r.h );
 	}
@@ -85,7 +96,7 @@
 		state = newState;
 	}
 	
-	var KEY_UPw = 87, KEY_DOWNs = 83, KEY_LEFTa = 65, KEY_RIGHTd = 68;
+	var KEY_UPw = 87, KEY_DOWNs = 83, KEY_LEFTa = 65, KEY_RIGHTd = 68, fire = 32;
 	
 	function handleKeyDown(evt) {
 		if ( evt.keyCode == KEY_UPw ) {
@@ -100,14 +111,16 @@
 		if ( evt.keyCode == KEY_RIGHTd ) {
 			right = true;
 		}
-		/*if ( evt.keyCode == KEY_SWORD )
-			swordOut = true;
-		*/
-		if ( 37 <= evt.keyCode && evt.keyCode <= 40 )
+		if ( evt.keyCode == fire )
+			firing = true;
+		
+		if ( 32 <= evt.keyCode && evt.keyCode <= 40 )
 			evt.preventDefault();
 		}
 		
 	function handleKeyUp(evt) {
+		if ( evt.keyCode == fire )
+			firing = false;
 		if ( evt.keyCode == KEY_UPw )
 			up = false;
 		if ( evt.keyCode == KEY_DOWNs )
@@ -117,7 +130,7 @@
 		if ( evt.keyCode == KEY_RIGHTd )
 			right = false;
 		
-		if ( 37 <= evt.keyCode && evt.keyCode <= 40 )
+		if ( 32 <= evt.keyCode && evt.keyCode <= 40 )
 			evt.preventDefault();
 	}
 	/********************************
@@ -138,6 +151,40 @@
 	}
 	
 	function updatePlay() {
+		curStamp = Date.now();
+		elapsed = curStamp - lastStamp;
+		
+		fireTime -= elapsed;
+		
+		if ( firing && fireTime <= 0 )
+		{
+			var bullet = {
+			x: player.x,
+			y: player.y + 20,
+			};
+			bullets.push(bullet);
+			var bullet = {
+				x: player.x + ( player.w - 2 ),
+				y: player.y + 20,
+			};
+			bullets.push(bullet);
+			fireTime = 100;
+		}
+		
+		for ( var i = bullets.length-1; i>=0; i-- ) {
+			bullets[i].y -= bspeed;
+			for ( var m = 0; m<pirates.length; m++) {
+				if ( collide ( bullets[i], pirates[m] ) ){
+					bullets.splice(i,1);
+					pirates[m].health - 50;
+				}	
+			}
+			if ( bullets[i].y < 0 )
+				bullets.splice(i, 1);
+		}
+		lastStamp = curStamp;
+		
+	
 		var orig = { x: player.x, y: player.y };
 			
 		// move the player
@@ -164,7 +211,7 @@
 		else if ( player.y + player.h > ctx.canvas.height )
 			player.y = ctx.canvas.height - player.h;
 	}
-	function collide( player, box ) {
+	function collide( object1, object2 ) {
 		if( player.x >= box.x + box.w )
 			return false;
 		if ( player.y >= box.y + box.h )
@@ -179,13 +226,14 @@
 	
 	function drawPlay(ctx) {
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-		
-		ctx.rect(0, 0, 800, 600);
-		ctx.fillStyle = pattern;
-		ctx.fill();
-		
+		if ( BGI.ready )
+			ctx.drawImage(BGI.img, 0, 0 );
 		if ( player.ready )
 			ctx.drawImage(player.img, player.x, player.y );
+		
+		ctx.fillStyle = "#00CC00";
+		for ( var i=0; i<bullets.length; ++i )
+			ctx.fillRect(bullets[i].x, bullets[i].y, 2, 8);
 	}
 	
 	function updateGameOver() {
