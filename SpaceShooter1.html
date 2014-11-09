@@ -14,6 +14,7 @@
 	var ctx;
 	
 	var BGI = {};
+	var menPic = {};
 	
 	var firing = false;
 	var bullets = [];
@@ -30,6 +31,8 @@
 	var timerID = -1;
 	var mouse = { x: 0, y: 0, clicked: false };
 	var playButton = {};
+	var settingsButton = {};
+	var storyButton = {};
 	var waitTime = 0;
 	var lastTime = 0;
 	var lives = 5;
@@ -43,6 +46,13 @@
 		player.ready = true;
 	}
 	player.img.src = "afg-041110-053.png";
+	
+	menPic.img = new Image();
+	menPic.ready = false;
+	menPic.img.onload = function() {
+		menPic.ready = true;
+	}
+	menPic.img.src = "Sci-Fi-Desert-and-Planet-Wallpaper.jpg";
 	
 	BGI.img = new Image();
 	BGI.ready = false;
@@ -66,10 +76,20 @@
 	{
 		ctx.font = "24pt Arial, sans-serif";
 		ctx.textBaseline = "top";
-		playButton.x = ctx.canvas.width/2 - 100;
-		playButton.y = ctx.canvas.height/2 - 50;
-		playButton.w = 200;
-		playButton.h = 100;
+		playButton.x = 355;
+		playButton.y = 450;
+		playButton.w = 250;
+		playButton.h = 50;
+		
+		settingsButton.x = 658;
+		settingsButton.y = 450;
+		settingsButton.w = 250;
+		settingsButton.h = 50;
+		
+		storyButton.x = 52;
+		storyButton.y = 450;
+		storyButton.w = 250;
+		storyButton.h = 50;
 	}
 	
 	function reset()
@@ -141,13 +161,29 @@
 		if ( mouse.clicked && contains(playButton, mouse) === true ) {
 			changeState(PLAY);
 		}
+		if ( mouse.clicked && contains(settingsButton, mouse) === true ) {
+			changeState(SETTINGS);
+		}
+		if ( mouse.clicked && contains(storyButton, mouse) === true ) {
+			changeState(STORY);
+		}
 		mouse.clicked = false;
 	}
 
 	function drawMenu(ctx) {
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		
+		if ( menPic.ready )
+			ctx.drawImage(menPic.img, 0, 0 );
+			
 		ctx.strokeRect(playButton.x, playButton.y, playButton.w, playButton.h);
-		ctx.fillText("[PLAY]", playButton.x+55, playButton.y+30);
+		ctx.fillText("[PLAY]", playButton.x+72, playButton.y+5);
+		
+		ctx.strokeRect(storyButton.x, storyButton.y, storyButton.w, storyButton.h);
+		ctx.fillText("[STORY]", storyButton.x+63, storyButton.y+5);
+		
+		ctx.strokeRect(settingsButton.x, settingsButton.y, settingsButton.w, settingsButton.h);
+		ctx.fillText("[SETTINGS]", settingsButton.x+40, settingsButton.y+5);
 	}
 	
 	function updatePlay() {
